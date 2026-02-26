@@ -1,5 +1,13 @@
 # 3-全流量回溯分析系统V1.0[简称：回溯分析系统]
+  1. 安装依赖                                          
+                                                                                                                        
+  npm install                                                                                                           
+                                                                                                                        
+  2. 启动开发服务器                                                                                                     
+                                                            
+  npm run dev
 
+  启动后默认访问 http://localhost:3000
 
 # 飞旗全流量回溯分析系统 V1.0  
 ## README.md

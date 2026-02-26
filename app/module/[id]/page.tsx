@@ -23,7 +23,7 @@ export default async function ModulePage({
 
   return (
     <AppShell>
-      <ModuleDetail module={mod} />
+      <ModuleDetail moduleId={mod.id} />
     </AppShell>
   )
 }

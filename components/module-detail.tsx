@@ -1,8 +1,12 @@
 "use client"
 
-import { Module } from "@/lib/modules"
+import { modules } from "@/lib/modules"
+import { modulePageDataMap } from "@/lib/module-data"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { CrudTable } from "@/components/crud-table"
+import { OpsMatrixPanels } from "@/components/ops-matrix-panels"
 import {
   AreaChart,
   Area,
@@ -16,20 +20,48 @@ import {
   Cell,
 } from "recharts"
 
-const activityData = Array.from({ length: 24 }, (_, i) => ({
-  time: `${String(i).padStart(2, "0")}:00`,
-  events: Math.floor(Math.random() * 120 + 20),
-  processed: Math.floor(Math.random() * 100 + 15),
-}))
-
-const pieData = [
-  { name: "\u5DF2\u5904\u7406", value: 78, color: "oklch(0.72 0.19 170)" },
-  { name: "\u5904\u7406\u4E2D", value: 15, color: "oklch(0.55 0.20 200)" },
-  { name: "\u5F85\u5904\u7406", value: 7, color: "oklch(0.65 0.15 60)" },
-]
-
-export function ModuleDetail({ module: mod }: { module: Module }) {
+export function ModuleDetail({ moduleId }: { moduleId: string }) {
+  const mod = modules.find((m) => m.id === moduleId)!
   const Icon = mod.icon
+  const data = modulePageDataMap[mod.id]
+  // 中文名称：去掉英文前缀
+  const chineseName = mod.name.replace(/^\S+\s+/, '')
+
+  // 如果没有配置数据，使用默认
+  const stats = data?.stats ?? [
+    { label: "今日处理", value: "12,847", change: "+8.3%" },
+    { label: "平均响应", value: "0.23s", change: "-12%" },
+    { label: "成功率", value: "99.7%", change: "+0.1%" },
+    { label: "活跃任务", value: "34", change: "稳定" },
+  ]
+
+  const chartConfig = data?.chart ?? {
+    title: "活动趋势",
+    yLabel: "数量",
+    series: [
+      { key: "events", name: "事件数", color: "oklch(0.72 0.19 170)" },
+      { key: "processed", name: "已处理", color: "oklch(0.55 0.20 200)", dashed: true },
+    ],
+  }
+
+  const chartData = data?.chartData ?? Array.from({ length: 24 }, (_, i) => ({
+    time: `${String(i).padStart(2, "0")}:00`,
+    events: Math.floor(Math.random() * 120 + 20),
+    processed: Math.floor(Math.random() * 100 + 15),
+  }))
+
+  const pieTitle = data?.pieTitle ?? "处理状态"
+  const pieData = data?.pieData ?? [
+    { name: "已处理", value: 78, color: "oklch(0.72 0.19 170)" },
+    { name: "处理中", value: 15, color: "oklch(0.55 0.20 200)" },
+    { name: "待处理", value: 7, color: "oklch(0.65 0.15 60)" },
+  ]
+
+  const tableConfig = data?.table
+  const crudConfig = data?.crud
+
+  // 为每个模块生成唯一的渐变ID
+  const gradId = `grad-${mod.id}`
 
   return (
     <div className="flex flex-col gap-6">
@@ -39,7 +71,7 @@ export function ModuleDetail({ module: mod }: { module: Module }) {
           <Icon className="h-6 w-6 text-primary" />
         </div>
         <div>
-          <h1 className="text-xl font-semibold text-foreground">{mod.nameEn}</h1>
+          <h1 className="text-xl font-semibold text-foreground">{chineseName}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{mod.description}</p>
           <div className="mt-2 flex flex-wrap gap-1.5">
             {mod.highlights.map((h) => (
@@ -57,12 +89,7 @@ export function ModuleDetail({ module: mod }: { module: Module }) {
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {[
-          { label: "\u4ECA\u65E5\u5904\u7406", value: "12,847", change: "+8.3%" },
-          { label: "\u5E73\u5747\u54CD\u5E94", value: "0.23s", change: "-12%" },
-          { label: "\u6210\u529F\u7387", value: "99.7%", change: "+0.1%" },
-          { label: "\u6D3B\u8DC3\u4EFB\u52A1", value: "34", change: "\u7A33\u5B9A" },
-        ].map((stat) => (
+        {stats.map((stat) => (
           <Card key={stat.label} className="bg-card border-border">
             <CardContent className="p-4">
               <p className="text-xs text-muted-foreground">{stat.label}</p>
@@ -78,18 +105,20 @@ export function ModuleDetail({ module: mod }: { module: Module }) {
         <Card className="bg-card border-border lg:col-span-2">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-foreground">
-              {"\u6D3B\u52A8\u8D8B\u52BF"}
+              {chartConfig.title}
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={activityData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
+                <AreaChart data={chartData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
                   <defs>
-                    <linearGradient id="eventsGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="oklch(0.72 0.19 170)" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="oklch(0.72 0.19 170)" stopOpacity={0} />
-                    </linearGradient>
+                    {chartConfig.series.map((s, i) => (
+                      <linearGradient key={i} id={`${gradId}-${i}`} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor={s.color} stopOpacity={0.3} />
+                        <stop offset="95%" stopColor={s.color} stopOpacity={0} />
+                      </linearGradient>
+                    ))}
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.25 0.02 250)" />
                   <XAxis
@@ -103,6 +132,7 @@ export function ModuleDetail({ module: mod }: { module: Module }) {
                     tick={{ fontSize: 10, fill: "oklch(0.60 0.02 250)" }}
                     axisLine={false}
                     tickLine={false}
+                    tickFormatter={(v) => chartConfig.yLabel ? `${v}` : `${v}`}
                   />
                   <Tooltip
                     contentStyle={{
@@ -113,23 +143,18 @@ export function ModuleDetail({ module: mod }: { module: Module }) {
                       color: "oklch(0.93 0.01 250)",
                     }}
                   />
-                  <Area
-                    type="monotone"
-                    dataKey="events"
-                    stroke="oklch(0.72 0.19 170)"
-                    fill="url(#eventsGrad)"
-                    strokeWidth={2}
-                    name={"\u4E8B\u4EF6\u6570"}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="processed"
-                    stroke="oklch(0.55 0.20 200)"
-                    fill="none"
-                    strokeWidth={1.5}
-                    strokeDasharray="4 4"
-                    name={"\u5DF2\u5904\u7406"}
-                  />
+                  {chartConfig.series.map((s, i) => (
+                    <Area
+                      key={s.key}
+                      type="monotone"
+                      dataKey={s.key}
+                      stroke={s.color}
+                      fill={s.dashed ? "none" : `url(#${gradId}-${i})`}
+                      strokeWidth={s.dashed ? 1.5 : 2}
+                      strokeDasharray={s.dashed ? "4 4" : undefined}
+                      name={s.name}
+                    />
+                  ))}
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -139,7 +164,7 @@ export function ModuleDetail({ module: mod }: { module: Module }) {
         <Card className="bg-card border-border">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-foreground">
-              {"\u5904\u7406\u72B6\u6001"}
+              {pieTitle}
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
@@ -171,7 +196,7 @@ export function ModuleDetail({ module: mod }: { module: Module }) {
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <div className="flex justify-center gap-4">
+            <div className="flex flex-wrap justify-center gap-3">
               {pieData.map((item) => (
                 <div key={item.name} className="flex items-center gap-1.5">
                   <span
@@ -188,13 +213,81 @@ export function ModuleDetail({ module: mod }: { module: Module }) {
         </Card>
       </div>
 
+      {/* Data Table - OpsMatrix专属面板 / CRUD版本 / 只读版本 */}
+      {mod.id === "ops-matrix" ? (
+        <OpsMatrixPanels />
+      ) : tableConfig && crudConfig ? (
+        <CrudTable
+          title={tableConfig.title}
+          columns={tableConfig.columns}
+          initialRows={tableConfig.rows}
+          formFields={crudConfig.formFields}
+          entityName={crudConfig.entityName}
+        />
+      ) : tableConfig ? (
+        <Card className="bg-card border-border">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-foreground">
+              {tableConfig.title}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <ScrollArea className="w-full">
+              <div className="min-w-[640px]">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border">
+                      {tableConfig.columns.map((col) => (
+                        <th
+                          key={col}
+                          className="px-3 py-2.5 text-left text-xs font-medium text-muted-foreground"
+                        >
+                          {col}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tableConfig.rows.map((row, rowIdx) => (
+                      <tr
+                        key={rowIdx}
+                        className="border-b border-border/50 transition-colors hover:bg-secondary/50"
+                      >
+                        {tableConfig.columns.map((col) => {
+                          const val = row[col] ?? ""
+                          if (col === "状态" || col === "风险等级") {
+                            return (
+                              <td key={col} className="px-3 py-2.5">
+                                <StatusBadge value={val} />
+                              </td>
+                            )
+                          }
+                          return (
+                            <td
+                              key={col}
+                              className="px-3 py-2.5 text-foreground whitespace-nowrap"
+                            >
+                              {val}
+                            </td>
+                          )
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      ) : null}
+
       {/* Business Flow */}
       <Card className="bg-card border-border">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium text-foreground">
-            {"\u4E1A\u52A1\u6D41\u7A0B"}
+            {"业务流程"}
           </CardTitle>
-          <p className="text-xs text-muted-foreground">{"\u6A21\u5757\u6838\u5FC3\u5904\u7406\u6D41\u7A0B\u7684\u5404\u4E2A\u9636\u6BB5"}</p>
+          <p className="text-xs text-muted-foreground">{"模块核心处理流程的各个阶段"}</p>
         </CardHeader>
         <CardContent className="pt-2">
           <div className="flex flex-col gap-0">
@@ -217,5 +310,26 @@ export function ModuleDetail({ module: mod }: { module: Module }) {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+// 状态/风险等级标签
+function StatusBadge({ value }: { value: string }) {
+  let className = "bg-muted text-muted-foreground border-border"
+
+  if (value === "告警" || value === "严重" || value === "高危") {
+    className = "bg-destructive/15 text-destructive border-destructive/30"
+  } else if (value === "观察" || value === "中危" || value === "分析中" || value === "推演中" || value === "学习中" || value === "繁忙" || value === "生成中") {
+    className = "bg-warning/15 text-warning border-warning/30"
+  } else if (value === "完成" || value === "已完成" || value === "已确认" || value === "已触发补救" || value === "正常" || value === "已登记" || value === "低危") {
+    className = "bg-primary/15 text-primary border-primary/30"
+  } else if (value === "未登记") {
+    className = "bg-accent/15 text-accent border-accent/30"
+  }
+
+  return (
+    <Badge variant="outline" className={`text-xs whitespace-nowrap ${className}`}>
+      {value}
+    </Badge>
   )
 }

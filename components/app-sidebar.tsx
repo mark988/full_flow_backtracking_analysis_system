@@ -33,7 +33,7 @@ export function AppSidebar() {
     },
     ...modules.map((m) => ({
       id: m.id,
-      name: m.nameEn,
+      name: m.name.replace(/^\S+\s+/, ''),
       nameEn: m.nameEn,
       icon: m.icon,
       href: `/module/${m.id}`,

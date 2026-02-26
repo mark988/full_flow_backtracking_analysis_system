@@ -32,7 +32,7 @@ export function ModulesGrid() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <h3 className="text-sm font-medium text-foreground">
-                          {mod.nameEn}
+                          {mod.name.replace(/^\S+\s+/, '')}
                         </h3>
                         <ArrowRight className="h-3 w-3 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
                       </div>

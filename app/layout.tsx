@@ -7,7 +7,7 @@ const inter = Inter({ subsets: ["latin", "cyrillic"], variable: '--font-inter' }
 const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: '--font-jetbrains-mono' });
 
 export const metadata: Metadata = {
-  title: '飞旗全流量回溯分析系统 V1.0',
+  title: '飞旗全流量回溯分析系统V1.0',
   description: '面向网络安全审计、攻击溯源、业务取证与异常行为分析的深度流量回溯平台',
 }
 
